@@ -1,0 +1,218 @@
+import React, { useState } from 'react';
+import { useAbsences } from '../context/AbsenceContext';
+import { useAuth } from '../context/AuthContext';
+import Layout from '../components/layout/Layout';
+import Card from '../components/ui/Card';
+import AbsenceList from '../components/absence/AbsenceList';
+import { format, parseISO, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { Calendar, Users, BookOpen, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Absence } from '../types';
+
+const Dashboard: React.FC = () => {
+  const { absences, teachers, departments, loading } = useAbsences();
+  const { user } = useAuth();
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedAbsence, setSelectedAbsence] = useState<Absence | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<string>('Todas');
+  const allUnits = Array.from(new Set(absences.map(abs => abs.unit).filter(Boolean))).sort();
+
+  // Calculate date range for current month
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const monthStartStr = format(monthStart, 'yyyy-MM-dd');
+  const monthEndStr = format(monthEnd, 'yyyy-MM-dd');
+
+  // Filter absences for current month
+  const currentMonthAbsences = absences.filter(
+    absence => absence.date >= monthStartStr && absence.date <= monthEndStr
+  );
+
+  // Calculate statistics
+  const totalTeachers = 3348;
+  const teachersAbsentThisMonth = new Set(currentMonthAbsences.map(a => a.teacherId)).size;
+  const absentPercentage = totalTeachers > 0 
+    ? Math.round((teachersAbsentThisMonth / totalTeachers) * 100) 
+    : 0;
+
+  // Department with most absences this month
+  const departmentCounts = currentMonthAbsences.reduce((acc, absence) => {
+    acc[absence.departmentId] = (acc[absence.departmentId] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  let highestDeptId = '';
+  let highestCount = 0;
+  
+  Object.entries(departmentCounts).forEach(([deptId, count]) => {
+    if (count > highestCount) {
+      highestCount = count;
+      highestDeptId = deptId;
+    }
+  });
+
+  const highestDept = departments.find(d => d.id === highestDeptId);
+
+  // Filter and sort absences
+  const filteredAndSortedAbsences = [...absences]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .filter(absence => {
+      if (selectedUnit === 'Todas') return true;
+      return absence.unit === selectedUnit;
+    });
+
+  // Get recent absences (last 5) from filtered list
+  const recentAbsences = filteredAndSortedAbsences;
+
+  // Navigate between months
+  const prevMonth = () => {
+    setCurrentMonth(subMonths(currentMonth, 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(addMonths(currentMonth, 1));
+  };
+
+  const handleViewAbsence = (absence: Absence) => {
+    setSelectedAbsence(absence);
+  };
+
+  interface AbsenceListProps {
+    title: string;
+    absences: Absence[];
+    onView: (absence: Absence) => void;
+  }
+
+  return (
+    <Layout>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Visão Geral</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Visão geral dos professores e estatísticas
+        </p>
+      </div>
+
+      {/* Month navigation */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-medium text-gray-900">
+          Estatísticas para {format(currentMonth, 'MMMM yyyy')}
+        </h2>
+        <div className="flex space-x-2">
+          <button
+            onClick={prevMonth}
+            className="p-2 rounded-md hover:bg-gray-100"
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={nextMonth}
+            className="p-2 rounded-md hover:bg-gray-100"
+            aria-label="Next month"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <Card className="bg-blue-50 border border-blue-100">
+          <div className="flex items-start">
+            <div className="p-3 bg-blue-500 rounded-lg">
+              <Calendar className="h-6 w-6 text-white" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-blue-600">Total de Faltas</p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900">
+                {currentMonthAbsences.length}
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                Este Mês
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="bg-green-50 border border-green-100">
+          <div className="flex items-start">
+            <div className="p-3 bg-green-500 rounded-lg">
+              <Users className="h-6 w-6 text-white" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-green-600">Faltas dos Professores</p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900">
+                {teachersAbsentThisMonth} <span className="text-sm text-gray-500">de {totalTeachers}</span>
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                {absentPercentage}% do corpo docente
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="bg-purple-50 border border-purple-100">
+          <div className="flex items-start">
+            <div className="p-3 bg-purple-500 rounded-lg">
+              <BookOpen className="h-6 w-6 text-white" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-purple-600">Departamento</p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900">
+                {highestDept?.name || 'None'}
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                Mais Faltas ({highestCount})
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="bg-amber-50 border border-amber-100">
+          <div className="flex items-start">
+            <div className="p-3 bg-amber-500 rounded-lg">
+              <Clock className="h-6 w-6 text-white" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-amber-600">Atividades Recentes</p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900">
+                {recentAbsences.length}
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                Novos registros de faltas
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Recent absences with filter */}
+      <div className="mb-6">
+        <div className="mb-4">
+          <label htmlFor="unit-select" className="block text-sm font-medium text-gray-700 mb-1">
+            Filtrar por Unidade:
+          </label>
+          <select
+            id="unit-select"
+            className="mt-1 block w-full max-w-xs border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            value={selectedUnit}
+            onChange={(e) => setSelectedUnit(e.target.value)}
+          >
+            <option value="Todas">Todas</option>
+            {allUnits.map((unit) => (
+              <option key={unit} value={unit}>
+                {unit}
+              </option>
+            ))}
+          </select>
+        </div>
+        <AbsenceList 
+          title={`Faltas Recentes ${selectedUnit !== 'Todas' ? `- ${selectedUnit}` : ''}`}
+          absences={recentAbsences}
+          onView={handleViewAbsence}
+        />
+      </div>
+    </Layout>
+  );
+};
+
+export default Dashboard;
