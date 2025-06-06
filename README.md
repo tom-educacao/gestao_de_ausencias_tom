@@ -1,89 +1,76 @@
-# Teacher Absence Management System - Supabase Implementation
+📘 Teacher Absence Management System
+Sistema de Gestão de Ausências de Professores — uma aplicação web desenvolvida em React + TypeScript para registrar, visualizar e exportar ausências de professores. Ideal para escolas e instituições educacionais.
 
-This document outlines the Supabase database implementation for the Teacher Absence Management System.
+🚀 Tecnologias Utilizadas
+React 18 — Biblioteca para construção da interface.
 
-## Database Schema
+TypeScript — Tipagem estática para maior segurança.
 
-### Tables
+Vite — Ferramenta moderna de build.
 
-1. **profiles**
-   - Stores user profile information
-   - Linked to Supabase Auth users
-   - Contains user roles (admin, coordinator, teacher)
+TailwindCSS — Framework de estilos utilitário.
 
-2. **departments**
-   - Stores school departments/units
-   - Referenced by teachers
+Supabase — Backend como serviço (autenticação e banco de dados).
 
-3. **teachers**
-   - Links profiles to departments
-   - Contains teacher-specific information
+Firebase — (Possivelmente usado para autenticação ou notificações).
 
-4. **absences**
-   - Stores absence records
-   - Links to teachers and substitute teachers
-   - Contains absence details (date, reason, duration, etc.)
+React Router Dom — Roteamento SPA.
 
-### Views
+Lucide React — Ícones modernos.
 
-1. **teacher_profiles_view**
-   - Combines teacher and profile information
-   - Simplifies queries for teacher data
+Recharts — Gráficos interativos.
 
-2. **absence_details_view**
-   - Provides complete absence information
-   - Includes teacher and department details
+XLSX e jsPDF — Exportação de dados para Excel e PDF.
 
-### Functions
+📁 Estrutura do Projeto
+csharp
+Copiar
+Editar
+├── src/
+│   ├── components/
+│   │   └── absence/         # Formulários e listas de ausências
+│   ├── App.tsx              # Configuração de rotas
+│   ├── main.tsx             # Ponto de entrada
+│   └── PrivateRoute.tsx     # Rota protegida (autenticação)
+├── public/
+├── index.html
+├── tailwind.config.js
+├── vite.config.ts
 
-1. **get_teacher_absences**
-   - Get absences for a specific teacher
+📦 Instalação e Execução
+# 1. Clone o repositório
+git clone https://github.com/tom-educacao/teacher-absence-management-system.git
 
-2. **get_department_absences**
-   - Get absences for a specific department
+# 2. Acesse o diretório do projeto
+cd teacher-absence-management-system
 
-3. **get_absences_by_date_range**
-   - Get absences within a date range
+# 3. Instale as dependências
+npm install
 
-4. **get_monthly_absence_stats**
-   - Get monthly absence statistics by department
+# 4. Inicie o servidor de desenvolvimento
+npm run dev
 
-## Security
+📜 Scripts Disponíveis
+Comando	Descrição
+npm run dev	Inicia o ambiente de desenvolvimento
+npm run build	Gera a versão de produção
+npm run preview	Previsualiza a build de produção
+npm run lint	Executa o ESLint para análise de código
 
-- Row Level Security (RLS) is enabled on all tables
-- Policies control access based on user roles:
-  - Admins have full access
-  - Coordinators can manage absences and view all data
-  - Teachers can view their own absences
-  - All authenticated users can view basic information
+🔐 Ambiente (.env)
+Crie um arquivo .env com as variáveis necessárias para integração com o Supabase e/ou Firebase:
 
-## Implementation Steps
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+VITE_FIREBASE_API_KEY=...
+...
+✅ Funcionalidades
+Cadastro de ausências
 
-1. Create the database tables and relationships
-2. Set up Row Level Security policies
-3. Create views for simplified data access
-4. Create helper functions for common queries
-5. Seed initial data for testing
-6. Connect the frontend to Supabase
+Listagem e exportação em PDF/Excel
 
-## Frontend Integration
+Autenticação (provavelmente com Supabase/Firebase)
 
-The frontend uses the Supabase JavaScript client to:
-- Authenticate users
-- Query and manipulate data
-- Subscribe to real-time updates
+Gráficos analíticos de ausências
 
-## Development Setup
-
-1. Create a Supabase project
-2. Run the migration scripts in the `supabase/migrations` directory
-3. Set up environment variables for the frontend
-4. Connect the frontend to Supabase
-
-## Production Considerations
-
-- Set up proper backups
-- Monitor database performance
-- Implement proper error handling
-- Consider adding indexes for frequently queried columns
-- Set up proper logging and monitoring
+Interface responsiva e moderna
