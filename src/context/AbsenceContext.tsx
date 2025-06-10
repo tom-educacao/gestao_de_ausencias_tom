@@ -44,22 +44,31 @@ const fetchData = async () => {
     if (departmentsError) throw departmentsError;
 
     // Fetch teachers with their profiles and department info
-    const { data: teachersData, error: teachersError } = await supabase
-      .from('teachers')
-      .select(`
-        id,
-        profile_id,
-        department_id,
-        unit,
-        contract_type,
-        course,
-        teaching_period,
-        profiles(name, email),
-        departments(name)
-      `)
-      .range(0, 4999);
-
-    if (teachersError) throw teachersError;
+    let allTeachers: any[] = [];
+    let start = 0;
+    let batchSize = 1000;
+    let done = false;
+    
+    while (!done) {
+      const { data: teachersData, error: teachersError } = await supabase
+        .from('teachers')
+        .select(
+          'id, profile_id, department_id, unit, contract_type, course, teaching_period, profiles(name, email), departments(name)'
+        )
+        .range(start, start + batchSize - 1);
+    
+      if (teachersError) throw teachersError;
+    
+      if (!teachersData || teachersData.length === 0) {
+        done = true;
+      } else {
+        allTeachers = allTeachers.concat(teachersData);
+        start += batchSize;
+        if (teachersData.length < batchSize) {
+          done = true;
+        }
+      }
+    }
 
     // Fetch absences with all related info
     const { data: absencesData, error: absencesError } = await supabase
@@ -100,7 +109,7 @@ const fetchData = async () => {
       name: dept.name
     }));
 
-    const transformedTeachers: Teacher[] = teachersData.map(teacher => ({
+    const transformedTeachers: Teacher[] = allTeachers.map(teacher => ({
       id: teacher.id,
       name: teacher.profiles?.name || '',
       department: teacher.department_id,
