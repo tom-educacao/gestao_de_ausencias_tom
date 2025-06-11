@@ -12,6 +12,7 @@ export interface Teacher {
 export interface Department {
   id: string;
   name: string;
+  disciplinaId: string;
 }
 
 export interface Substitute {
@@ -40,6 +41,7 @@ export interface Absence {
   teacherName: string;
   departmentId: string;
   departmentName: string;
+  disciplinaId: string;
   unit?: string;
   contractType?: string;
   course?: string;

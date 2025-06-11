@@ -292,16 +292,6 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
       header: 'Ações',
       accessor: (absence: Absence) => (
         <div className="flex space-x-2">
-          {onView && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onView(absence)}
-              icon={<Eye size={16} />}
-            >
-              Visualizar
-            </Button>
-          )}
           <Button
             variant="outline"
             size="sm"

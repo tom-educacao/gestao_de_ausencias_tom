@@ -27,7 +27,7 @@ const SubstituteSelect: React.FC<SubstituteSelectProps> = ({
 
   return (
     <Select
-      label="Professor Substituto"
+      label="Tutor Substituto"
       id="substituteTeacherId"
       name="substituteTeacherId"
       value={value}

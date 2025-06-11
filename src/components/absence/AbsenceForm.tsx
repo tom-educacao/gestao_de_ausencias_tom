@@ -34,6 +34,7 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
     teacherName: initialData.teacherName || '',
     departmentId: initialData.departmentId || '',
     departmentName: initialData.departmentName || '',
+    disciplinaId: initialData.disciplinaId || '',
     unit: initialData.unit || '',
     contractType: initialData.contractType || '',
     course: initialData.course || '',
@@ -356,37 +357,39 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
           )}
           
           {/* Department (auto-filled based on teacher) */}
-          <Select
-            label="Departamento"
-            id="departmentId"
-            name="departmentId"
-            value={formData.departmentId}
-            onChange={(value: string) => {
-              const selectedDepartment = departments.find(d => d.id === value);
-              
-              handleChange({
-                target: { 
-                  name: 'departmentId', 
-                  value 
-                } 
-              });
+<Select
+  label="Disciplina"
+  id="departmentId"
+  name="departmentId"
+  value={formData.departmentId}
+  onChange={(value: string) => {
+    const selectedDepartment = departments.find(d => d.id === value);
+    
+    handleChange({
+      target: { 
+        name: 'departmentId', 
+        value 
+      } 
+    });
+
+    // Atualiza também o departmentName e disciplinaId
+    if (selectedDepartment) {
+      setFormData(prev => ({
+        ...prev,
+        departmentName: selectedDepartment.name,
+        disciplinaId: selectedDepartment.disciplinaId, // Adicionando disciplinaId
+      }));
+    }
+  }} 
+  options={departments.map(department => ({
+    value: department.id,
+    label: `${department.name} - ${department.disciplinaId}`, // Mostra o departmentName e disciplinaId juntos
+  }))}
+  error={errors.departmentId}
+  required
+  icon={<FileText size={18} className="text-gray-400" />}
+/>
           
-              // Atualiza também o departmentName
-              if (selectedDepartment) {
-                setFormData(prev => ({
-                  ...prev,
-                  departmentName: selectedDepartment.name
-                }));
-              }
-            }} 
-            options={departments.map(department => ({
-              value: department.id,
-              label: department.name,
-            }))}
-            error={errors.departmentId}
-            required
-            icon={<FileText size={18} className="text-gray-400" />}
-          />
 
           {/* Contract Type */}
           <Select
@@ -514,7 +517,7 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
             htmlFor="fileInput"
             className="bg-blue-400 text-white rounded-lg py-2 px-4 cursor-pointer hover:bg-blue-500 transition duration-200 inline-block"
           >
-            Escolher arquivo
+            Clique para fazer upload do atestado
           </label>
           <input
             id="fileInput"
