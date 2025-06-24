@@ -21,7 +21,6 @@ const AbsenceList: React.FC<AbsenceListProps> = ({ title, absences, onView }) =>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Curso</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Período</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Razão</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duração</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Substituto</th>
@@ -37,7 +36,6 @@ const AbsenceList: React.FC<AbsenceListProps> = ({ title, absences, onView }) =>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{absence.contractType}</td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{absence.course}</td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{absence.departmentName}</td>
-                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{absence.teachingPeriod}</td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{absence.reason}</td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{absence.duration}</td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{absence.substituteTeacherName}</td>

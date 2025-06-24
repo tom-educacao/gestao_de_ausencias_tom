@@ -13,7 +13,8 @@ const Navbar: React.FC = () => {
     { name: 'Dashboard', href: '/' },
     { name: 'Registrar Ausência', href: '/register' },
     { name: 'Análises', href: '/analytics' },
-    { name: 'Registrar Professor', href: '/teacher'}
+    { name: 'Registrar Professor', href: '/teacher'},
+    { name: 'Registrar Substituto', href: '/substitute'}
   ];
 
   const isActive = (path: string) => {

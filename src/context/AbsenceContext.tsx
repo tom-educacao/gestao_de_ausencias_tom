@@ -84,7 +84,9 @@ const fetchData = async () => {
         substitute_teacher_id,
         substitute_teacher_name2,
         substitute_teacher_name3,
+        substitute_total_classes,
         substituteContent,
+        substitute_total_classes,
         duration,
         start_time,
         end_time,
@@ -95,18 +97,20 @@ const fetchData = async () => {
         contract_type,
         classes,
         course,
-        teacher:teachers(id, unit, contract_type, course, teaching_period, profiles(name), departments(id, name)),
+        teacher:teachers(id, unit, contract_type, course, teaching_period, profiles(name), departments(id, name, disciplinaId)),
         substitute:teachers(id, profiles(name)),
         substitutes:substitutes(id, name)
       `)
       .order('date', { ascending: false });
 
+    
     if (absencesError) throw absencesError;
 
     // Transform data to match our types
     const transformedDepartments: Department[] = departmentsData.map(dept => ({
       id: dept.id,
-      name: dept.name
+      name: dept.name,
+      disciplinaId: dept.disciplinaId,
     }));
 
     const transformedTeachers: Teacher[] = allTeachers.map(teacher => ({
@@ -138,6 +142,7 @@ const fetchData = async () => {
       substituteTeacherName2: absence.substitute_teacher_name2 || undefined,
       substituteTeacherName3: absence.substitute_teacher_name3 || undefined,
       substituteContent: absence.substituteContent || undefined,
+      substitute_total_classes: absence.substitute_total_classes || null,
       duration: absence.duration as any,
       startTime: absence.start_time || undefined,
       endTime: absence.end_time || undefined,
@@ -199,6 +204,7 @@ const fetchData = async () => {
           substitute_teacher_id: absence.substituteTeacherId || null,
           substitute_teacher_name2: absence.substituteTeacherName2 || null,
           substitute_teacher_name3: absence.substituteTeacherName3 || null,
+          substitute_total_classes: absence.substitute_total_classes || null,
           duration: duration,
           course: absence.course,
           start_time: duration === 'Partial Day' ? absence.startTime : null,
@@ -316,6 +322,7 @@ const fetchData = async () => {
 
 export const useAbsences = (): AbsenceContextType => {
   const context = useContext(AbsenceContext);
+  console.log(context)
   if (context === undefined) {
     throw new Error('useAbsences must be used within an AbsenceProvider');
   }

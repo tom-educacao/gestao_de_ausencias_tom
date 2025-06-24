@@ -51,6 +51,7 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
     hasSubstitute: initialData.hasSubstitute || '', // Novo campo
     substituteType: initialData.substituteType || '', // Novo campo
     substituteContent: initialData.substituteContent || '',
+    substitute_total_classes: initialData.substitute_total_classes || '',
   });
 
   const [isDepartmentChanged, setIsDepartmentChanged] = useState(false);
@@ -263,6 +264,89 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
             error={errors.teacherId}
             required
           />
+
+          {/* Department (auto-filled based on teacher) */}
+          <Select
+            label="Disciplina"
+            id="departmentId"
+            name="departmentId"
+            value={formData.departmentId}
+            onChange={(value: string) => {
+              const selectedDepartment = departments.find(d => d.id === value);
+              
+              handleChange({
+                target: { 
+                  name: 'departmentId', 
+                  value 
+                } 
+              });
+          
+              // Atualiza também o departmentName e disciplinaId
+              if (selectedDepartment) {
+                setFormData(prev => ({
+                  ...prev,
+                  departmentName: selectedDepartment.name,
+                  disciplinaId: selectedDepartment.disciplinaId, // Adicionando disciplinaId
+                }));
+              }
+            }} 
+            options={departments.map(department => ({
+              value: department.id,
+              label: `${department.name} - ${department.disciplinaId}`, // Mostra o departmentName e disciplinaId juntos
+            }))}
+            error={errors.departmentId}
+            required
+            icon={<FileText size={18} className="text-gray-400" />}
+          />
+
+          
+          {/* Course */}
+          <Select
+            label="Curso"
+            id="course"
+            name="course"
+            value={formData.course || ''}
+            onChange={(value) => setFormData(prev => ({ ...prev, course: value }))}
+            options={[
+              { value: 'Ensino Médio', label: 'Ensino Médio' },
+              { value: 'Anos Finais', label: 'Anos Finais' },
+              { value: 'Outros', label: 'Outros' },
+            ]}
+            icon={<BookOpen size={18} className="text-gray-400" />}
+          />
+
+          {/* Contract Type */}
+          <Select
+            label="Categoria"
+            id="contractType"
+            name="contractType"
+            value={formData.contractType || ''}
+            onChange={(value) => setFormData(prev => ({ ...prev, contractType: value }))}
+            options={[
+              { value: 'GPES', label: 'GPES' },
+              { value: 'MUN', label: 'MUN' },
+              { value: 'QFEB', label: 'QFEB' },
+              { value: 'QPM', label: 'QPM'},
+              { value: 'REPR', label: 'REPR'},
+              { value: 'S100', label: 'S100'},
+              { value: 'SC02', label: 'SC02'},
+            ]}
+            icon={<Briefcase size={18} className="text-gray-400" />}
+          />
+
+          {/* Number of classes missed */}
+          <Input
+            label={`${formData.teacherName} faltou quantas aulas?`}
+            id="classes"
+            name="classes"
+            type="number"
+            value={formData.classes}
+            onChange={handleChange}
+            error={errors.classes}
+            required
+          />
+
+          {/* Aulas substituidas */}
           
           {/* Houve substituto? */}
           <Select
@@ -276,21 +360,6 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
               { value: 'Não', label: 'Não' },
             ]}
           />
-
-          {/* Se Sim, seguiu o material? */}
-          {formData.hasSubstitute === 'Sim' && (
-            <Select
-              label="Substituto seguiu o conteúdo do professor?"
-              id="substituteContent"
-              name="substituteContent"
-              value={formData.substituteContent}
-              onChange={(value) => setFormData(prev => ({ ...prev, substituteContent: value }))}
-              options={[
-                { value: 'Sim', label: 'Sim' },
-                { value: 'Não', label: 'Não' },
-              ]}
-            />
-          )}
           
           {/* Se Sim, quem substituiu? */}
           {formData.hasSubstitute === 'Sim' && (
@@ -355,90 +424,21 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
               />
             </div>
           )}
-          
-          {/* Department (auto-filled based on teacher) */}
-<Select
-  label="Disciplina"
-  id="departmentId"
-  name="departmentId"
-  value={formData.departmentId}
-  onChange={(value: string) => {
-    const selectedDepartment = departments.find(d => d.id === value);
-    
-    handleChange({
-      target: { 
-        name: 'departmentId', 
-        value 
-      } 
-    });
 
-    // Atualiza também o departmentName e disciplinaId
-    if (selectedDepartment) {
-      setFormData(prev => ({
-        ...prev,
-        departmentName: selectedDepartment.name,
-        disciplinaId: selectedDepartment.disciplinaId, // Adicionando disciplinaId
-      }));
-    }
-  }} 
-  options={departments.map(department => ({
-    value: department.id,
-    label: `${department.name} - ${department.disciplinaId}`, // Mostra o departmentName e disciplinaId juntos
-  }))}
-  error={errors.departmentId}
-  required
-  icon={<FileText size={18} className="text-gray-400" />}
-/>
-          
+          {/* Campo: Quantas aulas o substituto deu? */}
+          {formData.hasSubstitute === 'Sim' && (
+            <Input
+              label="Quantas aulas o substituto deu?"
+              id="substitute_total_classes"
+              name="substitute_total_classes"
+              type="number"
+              min="0"
+              step="1"
+              value={formData.substitute_total_classes || ''}
+              onChange={handleChange}
+            />
+          )}
 
-          {/* Contract Type */}
-          <Select
-            label="Categoria"
-            id="contractType"
-            name="contractType"
-            value={formData.contractType || ''}
-            onChange={(value) => setFormData(prev => ({ ...prev, contractType: value }))}
-            options={[
-              { value: 'GPES', label: 'GPES' },
-              { value: 'MUN', label: 'MUN' },
-              { value: 'QFEB', label: 'QFEB' },
-              { value: 'QPM', label: 'QPM'},
-              { value: 'REPR', label: 'REPR'},
-              { value: 'S100', label: 'S100'},
-              { value: 'SC02', label: 'SC02'},
-            ]}
-            icon={<Briefcase size={18} className="text-gray-400" />}
-          />
-          
-          {/* Course */}
-          <Select
-            label="Curso"
-            id="course"
-            name="course"
-            value={formData.course || ''}
-            onChange={(value) => setFormData(prev => ({ ...prev, course: value }))}
-            options={[
-              { value: 'Ensino Médio', label: 'Ensino Médio' },
-              { value: 'Anos Finais', label: 'Anos Finais' },
-              { value: 'Outros', label: 'Outros' },
-            ]}
-            icon={<BookOpen size={18} className="text-gray-400" />}
-          />
-          
-          {/* Teaching Period */}
-          <Select
-            label="Período"
-            id="teachingPeriod"
-            name="teachingPeriod"
-            value={formData.teachingPeriod || ''}
-            onChange={(value) => setFormData(prev => ({ ...prev, teachingPeriod: value }))}
-            options={[
-              { value: 'Morning', label: 'Manhã' },
-              { value: 'Afternoon', label: 'Tarde' },
-              { value: 'Evening', label: 'Noite' },
-            ]}
-            icon={<Clock12 size={18} className="text-gray-400" />}
-          />
           
           {/* Absence Date */}
           <Input
@@ -473,31 +473,6 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
             required
           />
           
-          {/* Duration */}
-          <Select
-            label="Duração"
-            id="duration"
-            name="duration"
-            value={formData.duration}
-            onChange={(value) => setFormData(prev => ({ ...prev, duration: value as AbsenceDuration }))}
-            options={[
-              { value: 'Full Day', label: 'Dia todo' },
-              { value: 'Partial Day', label: 'Dia Parcial' },
-            ]}
-            required
-          />
-          
-          {/* Number of classes missed */}
-          <Input
-            label={`${formData.teacherName} faltou quantas aulas?`}
-            id="classes"
-            name="classes"
-            type="number"
-            value={formData.classes}
-            onChange={handleChange}
-            error={errors.classes}
-            required
-          />
         </div>
 
         <Input

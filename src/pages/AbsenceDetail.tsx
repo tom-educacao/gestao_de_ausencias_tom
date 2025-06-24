@@ -129,16 +129,6 @@ const AbsenceDetail: React.FC = () => {
               </div>
               
               <div className="flex items-start">
-                <div className="p-2 bg-rose-100 rounded-lg">
-                  <Clock12 className="h-5 w-5 text-rose-600" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-gray-500">Período</h3>
-                  <p className="text-lg font-semibold text-gray-900">{absence.teachingPeriod || '-'}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <Calendar className="h-5 w-5 text-purple-600" />
                 </div>
