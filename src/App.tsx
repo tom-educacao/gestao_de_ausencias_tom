@@ -8,6 +8,7 @@ import Analytics from './pages/Analytics';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import RegisterTeacher from './pages/RegisterTeacher';
+import RegisterSubstitute from './pages/RegisterSubstitute';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
             <Route path="/register" element={<RegisterAbsence />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/teacher" element={<RegisterTeacher />} />
+            <Route path="/substitute" element={<RegisterSubstitute />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AbsenceProvider>

@@ -42,6 +42,7 @@ export interface Absence {
   departmentId: string;
   departmentName: string;
   disciplinaId: string;
+  substitute_total_classes?: string;
   unit?: string;
   contractType?: string;
   course?: string;

@@ -142,7 +142,7 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
     doc.text(`Gerado em ${format(new Date(), 'dd MMMM, yyyy')}`, 14, 30);
     
     // Create table
-    const tableColumn = ['Unidade', 'Data', 'Professor', 'Categoria', 'Curso', 'Departamento', 'Período', 'Razão', 'Duração', 'Substituto', 'Seguiu_Conteudo'];
+    const tableColumn = ['Unidade', 'Data', 'Professor', 'Categoria', 'Curso', 'Departamento', 'Período', 'Razão', 'Duração', 'Substituto', 'Aulas dadas pelo substituto'];
     const tableRows = sortedAbsences.map(absence => [
       absence.unit || '-',
       format(parseISO(absence.date), 'MMM dd, yyyy'),
@@ -154,7 +154,7 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
       absence.reason,
       `${absence.classes} aulas`,
       absence.substituteTeacherName || absence.substituteTeacherName2 || absence.substituteTeacherName3 || 'Nenhum',
-      absence.substituteContent || '-',
+      absence.substitute_total_classes || 'Nenhum',
     ]);
     
     autoTable(doc, {
@@ -192,7 +192,7 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
           Razão: absence.reason,
           Duração: `${absence.classes} aulas`,
           Substituto: absence.substituteTeacherName || absence.substituteTeacherName2 || absence.substituteTeacherName3 || 'Nenhum',
-          Seguiu_Conteudo: absence.substituteContent || '-',
+          Substituto_aulas: absence.substitute_total_classes || 'Nenhum',
           Categoria_Substituto: categoriaSubstituto, // <-- Nova coluna adicionada aqui
           Notas: absence.notes || '',
         };
@@ -261,10 +261,7 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
       header: 'Departamento',
       accessor: 'departmentName',
     },
-    {
-      header: 'Período',
-      accessor: (absence: Absence) => absence.teachingPeriod || '-',
-    },
+
     {
       header: 'Razão',
       accessor: 'reason',
@@ -284,8 +281,14 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
     },
 
     {
-      header: 'Seguiu_Conteudo',
-      accessor: (absence: Absence) => absence.substituteContent || '-',
+      header: 'Aulas dadas pelo substituto',
+      accessor: (absence: Absence) => {
+        if (absence.substitute_total_classes > 0){
+          return `${absence.substitute_total_classes} aulas`;
+        }  else {
+        return '-'
+        }
+      }
     },
   
     {
@@ -402,21 +405,6 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
               <option value="Ensino Médio">Ensino Médio</option>
               <option value="Anos Finais">Anos Finais</option>
               <option value="Outros">Outros</option>
-            </select>
-          </label>
-    
-          {/* Campo: Período */}
-          <label className="block">
-            Período:
-            <select
-              className="w-full border p-2 mt-1"
-              value={formData.teachingPeriod || ''}
-              onChange={(e) => handleFormChange('teachingPeriod', e.target.value)}
-            >
-              <option value="">Selecione</option>
-              <option value="Morning">Manhã</option>
-              <option value="Afternoon">Tarde</option>
-              <option value="Night">Noite</option>
             </select>
           </label>
     
