@@ -59,6 +59,11 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
   // Filter teachers by selected unit
   const filteredTeachers = teachers.filter(teacher => teacher.unit === formData.unit);
 
+  // Cria um Set para garantir que o nome do professor seja único
+  const uniqueTeachers = [
+    ...new Map(filteredTeachers.map(teacher => [teacher.name, teacher])).values()
+  ];
+
   // Handle form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     if (!e.target) return;
@@ -257,9 +262,9 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
             name="teacherId"
             value={formData.teacherId}
             onChange={handleTeacherChange}
-            options={filteredTeachers.map(teacher => ({
+            options={uniqueTeachers.map(teacher => ({
               value: teacher.id,
-              label: `${teacher.name} (${departments.find(d => d.id === teacher.department)?.name})`,
+              label: `${teacher.name}`,
             }))}
             error={errors.teacherId}
             required
