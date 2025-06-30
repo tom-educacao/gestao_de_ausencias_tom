@@ -89,24 +89,31 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
     }
   };
 
-  // Handle teacher selection
-  const handleTeacherChange = (teacherId: string) => {
-    const selectedTeacher = teachers.find(t => t.id === teacherId);
-    const department = departments.find(d => d.id === selectedTeacher?.department);
-    
-    setFormData(prev => ({
-      ...prev,
-      teacherId,
-      teacherName: selectedTeacher?.name || '',
-      unit: selectedTeacher?.unit || '',
-      contractType: selectedTeacher?.contractType || '',
-      course: selectedTeacher?.course || '',
-      teachingPeriod: selectedTeacher?.teachingPeriod || '',
-      departmentId: isDepartmentChanged ? prev.departmentId : department?.id || '',
-      departmentName: isDepartmentChanged ? prev.departmentName : department?.name || '',
-    }));
+// Handle teacher selection com salvamento no localStorage
+const handleTeacherChange = (teacherId: string) => {
+  const selectedTeacher = teachers.find(t => t.id === teacherId);
+  const department = departments.find(d => d.id === selectedTeacher?.department);
 
-  };
+  // Atualiza o estado do formulário
+  setFormData(prev => ({
+    ...prev,
+    teacherId,
+    teacherName: selectedTeacher?.name || '',
+    unit: selectedTeacher?.unit || '',
+    contractType: selectedTeacher?.contractType || '',
+    course: selectedTeacher?.course || '',
+    teachingPeriod: selectedTeacher?.teachingPeriod || '',
+    departmentId: isDepartmentChanged ? prev.departmentId : department?.id || '',
+    departmentName: isDepartmentChanged ? prev.departmentName : department?.name || '',
+  }));
+
+  // Salva no localStorage para reutilização futura
+  if (selectedTeacher?.unit) {
+    localStorage.setItem('ultimaUnidade', selectedTeacher.unit);
+  }
+  localStorage.setItem('ultimoProfessorId', teacherId);
+};
+
 
   // Handle file input change
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,6 +201,8 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
         await updateAbsence(initialData.id, absenceData);
       } else {
         await addAbsence(absenceData as Omit<Absence, 'id' | 'createdAt' | 'updatedAt'>);
+        localStorage.setItem('ultimaUnidade', formData.unit || '');
+        localStorage.setItem('ultimoProfessorId', formData.teacherId || '');
         handleUpload();
       }
       
@@ -206,6 +215,31 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
       setIsSubmitting(false);
     }
   };
+
+useEffect(() => {
+  if (isEditing) return; // Não sobrescreve se estiver editando
+
+  const ultimaUnidade = localStorage.getItem('ultimaUnidade');
+  const ultimoProfessorId = localStorage.getItem('ultimoProfessorId');
+
+  if (ultimaUnidade && ultimoProfessorId) {
+    const professor = teachers.find(t => t.id === ultimoProfessorId);
+    const departamento = departments.find(d => d.id === professor?.department);
+
+    setFormData(prev => ({
+      ...prev,
+      unit: ultimaUnidade,
+      teacherId: professor?.id || '',
+      teacherName: professor?.name || '',
+      contractType: professor?.contractType || '',
+      course: professor?.course || '',
+      teachingPeriod: professor?.teachingPeriod || '',
+      departmentId: departamento?.id || '',
+      departmentName: departamento?.name || '',
+    }));
+  }
+}, [teachers, departments, isEditing]);
+
 
   return (
     <Card title={isEditing ? 'Edit Absence' : 'Register New Absence'}>
@@ -514,6 +548,28 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
 
         
         <div className="flex justify-end space-x-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              localStorage.removeItem('ultimaUnidade');
+              localStorage.removeItem('ultimoProfessorId');
+              setFormData(prev => ({
+                ...prev,
+                unit: '',
+                teacherId: '',
+                teacherName: '',
+                departmentId: '',
+                departmentName: '',
+                contractType: '',
+                course: '',
+                teachingPeriod: '',
+              }));
+            }}
+          >
+            Apagar Seleção
+          </Button>
+
           <Button
             type="button"
             variant="outline"
