@@ -4,6 +4,7 @@ import { Absence } from '../../types';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
+import SubstituteSelect from './SubstituteSelect';
 
 interface EditAbsenceModalProps {
   absence: Absence | null;
@@ -52,14 +53,94 @@ const EditAbsenceModal: React.FC<EditAbsenceModalProps> = ({ absence, onClose, o
           value={formData.date.slice(0, 10)}
           onChange={handleChange}
         />
-        {/* Adicione mais campos conforme necessário */}
+    
+        {/* Houve substituto? */}
+        <select
+          name="hasSubstitute"
+          value={formData.hasSubstitute || ''}
+          onChange={handleChange}
+          className="border rounded p-2 w-full"
+        >
+          <option value="">Houve substituto?</option>
+          <option value="Sim">Sim</option>
+          <option value="Não">Não</option>
+        </select>
+    
+        {/* Quem substituiu? */}
+        {formData.hasSubstitute === 'Sim' && (
+          <select
+            name="substituteType"
+            value={formData.substituteType || ''}
+            onChange={handleChange}
+            className="border rounded p-2 w-full"
+          >
+            <option value="">Quem substituiu?</option>
+            <option value="Professor">Professor</option>
+            <option value="Tutor Substituto">Tutor Substituto</option>
+            <option value="Outro">Outro</option>
+          </select>
+        )}
+    
+        {/* Nome do substituto */}
+        {formData.hasSubstitute === 'Sim' && formData.substituteType === 'Professor' && (
+          <Input
+            label="Nome do Professor Substituto"
+            name="substituteTeacherName2"
+            value={formData.substituteTeacherName2 || ''}
+            onChange={handleChange}
+          />
+        )}
+    
+        {formData.hasSubstitute === 'Sim' && formData.substituteType === 'Outro' && (
+          <Input
+            label="Nome/Cargo do substituto"
+            name="substituteTeacherName3"
+            value={formData.substituteTeacherName3 || ''}
+            onChange={handleChange}
+          />
+        )}
 
+        {formData.hasSubstitute === 'Sim' && formData.substituteType === 'Tutor Substituto' && (
+          <SubstituteSelect
+            value={formData.substituteTeacherId || ''}
+            onChange={(value) => setFormData(prev => prev ? {
+              ...prev,
+              substituteTeacherId: value,
+              substituteTeacherName: value
+            } : null)}
+            unit={formData.unit}
+            error={undefined}
+          />
+        )}
+
+        {formData.hasSubstitute === 'Não' && (
+          <Input
+            label="Substituição"
+            name="substituteTeacherName"
+            value="Não"
+            readOnly
+          />
+        )}
+    
+        {formData.hasSubstitute === 'Sim' && (
+          <Input
+            label="Quantas aulas o substituto deu?"
+            name="substitute_total_classes"
+            type="number"
+            min="0"
+            step="1"
+            value={formData.substitute_total_classes || ''}
+            onChange={handleChange}
+          />
+        )}
+    
         <div className="flex justify-end space-x-2">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button onClick={handleSubmit}>Salvar</Button>
         </div>
       </div>
     </Modal>
+
   );
 };
 
