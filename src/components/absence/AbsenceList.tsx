@@ -25,7 +25,7 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
   absences, 
   title = "Absence Records" 
 }) => {
-  const { absences: contextAbsences, deleteAbsence, loading } = useAbsences();
+  const { absences: contextAbsences, deleteAbsence, loading, departments } = useAbsences();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [editingAbsence, setEditingAbsence] = useState<Absence | null>(null);
@@ -150,19 +150,27 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
     
     // Create table
     const tableColumn = ['Unidade', 'Data', 'Professor', 'Categoria', 'Curso', 'Departamento', 'Período', 'Razão', 'Duração', 'Substituto', 'Aulas dadas pelo substituto'];
-    const tableRows = sortedAbsences.map(absence => [
-      absence.unit || '-',
-      format(parseISO(absence.date), 'MMM dd, yyyy'),
-      absence.teacherName,
-      absence.contractType || '-',
-      absence.course || '-',
-      absence.departmentName,
-      absence.teachingPeriod || '-',
-      absence.reason,
-      `${absence.classes} aulas`,
-      absence.substituteTeacherName || absence.substituteTeacherName2 || absence.substituteTeacherName3 || 'Nenhum',
-      absence.substitute_total_classes || 'Nenhum',
-    ]);
+    const tableRows = sortedAbsences.map(absence => {
+      const department = departments.find(d => d.id === absence.departmentId);
+      const disciplinaId = department?.disciplinaId || '';
+      const departamentoCompleto = disciplinaId
+        ? `${absence.departmentName} - ${disciplinaId}`
+        : absence.departmentName;
+    
+      return [
+        absence.unit || '-',
+        format(parseISO(absence.date), 'MMM dd, yyyy'),
+        absence.teacherName,
+        absence.contractType || '-',
+        absence.course || '-',
+        departamentoCompleto,
+        absence.teachingPeriod || '-',
+        absence.reason,
+        `${absence.classes} aulas`,
+        absence.substituteTeacherName || absence.substituteTeacherName2 || absence.substituteTeacherName3 || 'Nenhum',
+        absence.substitute_total_classes || 'Nenhum',
+      ];
+    });
     
     autoTable(doc, {
       head: [tableColumn],
@@ -178,8 +186,14 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
   // Export to Excel
   const exportToExcel = async () => {
     // Criando o worksheet para os registros de faltas
-    const worksheet = XLSX.utils.json_to_sheet(
+    const worksheet = XLSX.utils.json_to_sheet(    
       sortedAbsences.map(absence => {
+        const department = departments.find(d => d.id === absence.departmentId);
+        const disciplinaId = department?.disciplinaId || '';
+        const departamentoCompleto = disciplinaId
+          ? `${absence.departmentName} - ${disciplinaId}`
+          : absence.departmentName;
+        
         const categoriaSubstituto = absence.substituteTeacherName
           ? 'Tutor'
           : absence.substituteTeacherName2
@@ -194,7 +208,7 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
           Professor: absence.teacherName,
           Categoria: absence.contractType || '-',
           Curso: absence.course || '-',
-          Departamento: absence.departmentName,
+          Departamento: departamentoCompleto,
           Período: absence.teachingPeriod || '-',
           Razão: absence.reason,
           Duração: `${absence.classes} aulas`,
@@ -266,7 +280,12 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
     },
     {
       header: 'Departamento',
-      accessor: 'departmentName',
+      accessor: (absence: Absence) => {
+        // Buscar o departamento correspondente para obter o disciplinaId
+        const department = departments.find(d => d.id === absence.departmentId);
+        const disciplinaId = department?.disciplinaId || '';
+        return disciplinaId ? `${absence.departmentName} - ${disciplinaId}` : absence.departmentName;
+      },
     },
 
     {
