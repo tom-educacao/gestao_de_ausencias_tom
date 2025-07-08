@@ -13,6 +13,7 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedAbsence, setSelectedAbsence] = useState<Absence | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<Date | null>(null);
   const [selectedUnit, setSelectedUnit] = useState<string>('Todas');
   const allUnits = Array.from(new Set(absences.map(abs => abs.unit).filter(Boolean))).sort();
 
@@ -26,6 +27,13 @@ const Dashboard: React.FC = () => {
   const currentMonthAbsences = absences.filter(
     absence => absence.date >= monthStartStr && absence.date <= monthEndStr
   );
+
+  const availableMonths = Array.from(
+    new Set(
+      absences
+        .map(abs => format(parseISO(abs.date), 'yyyy-MM'))
+    )
+  ).sort().reverse();
 
   // Calculate statistics
   const totalTeachers = 3348;
@@ -56,9 +64,19 @@ const Dashboard: React.FC = () => {
   const filteredAndSortedAbsences = [...absences]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .filter(absence => {
-      if (selectedUnit === 'Todas') return true;
-      return absence.unit === selectedUnit;
+      if (selectedUnit !== 'Todas' && absence.unit !== selectedUnit) {
+        return false;
+      }
+      if (selectedMonth) {
+        const date = parseISO(absence.date);
+        return (
+          date >= startOfMonth(selectedMonth) &&
+          date <= endOfMonth(selectedMonth)
+        );
+      }
+      return true;
     });
+
 
   // Get recent absences (last 5) from filtered list
   const recentAbsences = filteredAndSortedAbsences;
@@ -74,6 +92,7 @@ const Dashboard: React.FC = () => {
 
   const handleViewAbsence = (absence: Absence) => {
     setSelectedAbsence(absence);
+    console.log(absence)
   };
 
   interface AbsenceListProps {
@@ -205,6 +224,26 @@ const Dashboard: React.FC = () => {
             ))}
           </select>
         </div>
+        <div className="mb-4">
+          <label htmlFor="month-select" className="block text-sm font-medium text-gray-700 mb-1">
+            Filtrar por Mês:
+          </label>
+          <select
+            id="month-select"
+            className="mt-1 block w-full max-w-xs border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            value={selectedMonth ? format(selectedMonth, 'yyyy-MM') : ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSelectedMonth(val ? parseISO(val + '-01') : null);
+            }}
+          >
+            <option value="">Todos os Meses</option>
+            {availableMonths.map(month => (
+              <option key={month} value={month}>{format(parseISO(month + '-01'), 'MMMM yyyy')}</option>
+            ))}
+          </select>
+        </div>
+
         <AbsenceList 
           title={`Faltas Recentes ${selectedUnit !== 'Todas' ? `- ${selectedUnit}` : ''}`}
           absences={recentAbsences}

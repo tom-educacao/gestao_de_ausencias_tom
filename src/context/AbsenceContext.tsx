@@ -53,7 +53,7 @@ const fetchData = async () => {
       const { data: teachersData, error: teachersError } = await supabase
         .from('teachers')
         .select(
-          'id, profile_id, department_id, unit, contract_type, course, teaching_period, profiles(name, email), departments(name)'
+          'id, profile_id, department_id, unit, contract_type, course, teaching_period, regencia, profiles(name, email), departments(name)'
         )
         .range(start, start + batchSize - 1);
     
@@ -121,7 +121,8 @@ const fetchData = async () => {
       unit: teacher.unit || undefined,
       contractType: teacher.contract_type || undefined,
       course: teacher.course || undefined,
-      teachingPeriod: teacher.teachingPeriod || undefined
+      teachingPeriod: teacher.teachingPeriod || undefined,
+      regencia: teacher.regencia ?? null
     }));
 
     const transformedAbsences: Absence[] = absencesData.map(absence => ({
@@ -322,7 +323,6 @@ const fetchData = async () => {
 
 export const useAbsences = (): AbsenceContextType => {
   const context = useContext(AbsenceContext);
-  console.log(context)
   if (context === undefined) {
     throw new Error('useAbsences must be used within an AbsenceProvider');
   }

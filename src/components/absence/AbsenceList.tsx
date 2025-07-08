@@ -10,6 +10,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
+import SubstituteSelect from './SubstituteSelect';
 
 interface AbsenceListProps {
   onEdit?: (absence: Absence) => void;
@@ -38,7 +39,6 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
   );
 
   const openEditModal = (absence: Absence) => {
-    console.log(absence)
     setEditingAbsence(absence);
     setFormData(absence); // Preenche o formulário com os dados atuais
   };
@@ -56,13 +56,20 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
     if (editingAbsence) {
       // Mapeia os campos camelCase para snake_case conforme esperado pelo Supabase
       const updatedFields = {
-        reason: formData.reason,
-        date: formData.date,
-        contract_type: formData.contractType,
-        course: formData.course,
-        teachingPeriod: formData.teachingPeriod,
-        classes: formData.classes,
-        // Adicione mais campos aqui se necessário
+        reason: formData.reason || '',
+        date: formData.date || '',
+        contract_type: formData.contractType || '',
+        course: formData.course || '',
+        teachingPeriod: formData.teachingPeriod || '',
+        classes: formData.classes || '',
+        hasSubstitute: formData.hasSubstitute || '',
+        substituteType: formData.substituteType || '',
+        substitute_teacher_name2: formData.substituteTeacherName2 || '',
+        substitute_teacher_name3: formData.substituteTeacherName3 || '',
+        substitute_total_classes: formData.substitute_total_classes === '' ? null : formData.substitute_total_classes,
+        substitute_teacher_id: formData.substituteType === 'Tutor Substituto' 
+          ? formData.substituteTeacherName || null 
+          : null,
       };
   
       try {
@@ -437,6 +444,109 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
               <option value="Demissao">Demissão</option>
             </select>
           </label>
+
+          {/* Campo: Houve substituto? */}
+          <label className="block">
+            Houve substituto?
+            <select
+              className="w-full border p-2 mt-1"
+              value={formData.hasSubstitute || ''}
+              onChange={(e) => handleFormChange('hasSubstitute', e.target.value)}
+            >
+              <option value="">Selecione</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+          </label>
+          
+          {/* Campo: Quem substituiu? */}
+          {formData.hasSubstitute === 'Sim' && (
+            <label className="block">
+              Quem substituiu?
+              <select
+                className="w-full border p-2 mt-1"
+                value={formData.substituteType || ''}
+                onChange={(e) => handleFormChange('substituteType', e.target.value)}
+              >
+                <option value="">Selecione</option>
+                <option value="Professor">Professor</option>
+                <option value="Tutor Substituto">Tutor Substituto</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </label>
+          )}
+          
+          {/* Nome do Professor Substituto */}
+          {formData.hasSubstitute === 'Sim' && formData.substituteType === 'Professor' && (
+            <label className="block">
+              Nome do Professor Substituto:
+              <input
+                type="text"
+                className="w-full border p-2 mt-1"
+                value={formData.substituteTeacherName2 || ''}
+                onChange={(e) => handleFormChange('substituteTeacherName2', e.target.value)}
+              />
+            </label>
+          )}
+          
+          {/* Nome/Cargo do Outro Substituto */}
+          {formData.hasSubstitute === 'Sim' && formData.substituteType === 'Outro' && (
+            <label className="block">
+              Nome/Cargo do substituto:
+              <input
+                type="text"
+                className="w-full border p-2 mt-1"
+                value={formData.substituteTeacherName3 || ''}
+                onChange={(e) => handleFormChange('substituteTeacherName3', e.target.value)}
+              />
+            </label>
+          )}
+
+          {/* Se Tutor Substituto, selecionar o professor substituto */}
+          {formData.hasSubstitute === 'Sim' && formData.substituteType === 'Tutor Substituto' && (
+            <div className="block">
+              <label className="block mb-1">Tutor Substituto:</label>
+              <SubstituteSelect
+                value={formData.substituteTeacherId || ''}
+                onChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    substituteTeacherId: value,
+                    substituteTeacherName: value,
+                  }))
+                }
+                unit={formData.unit}
+              />
+            </div>
+          )}
+          
+          {/* Se NÃO houve substituto, campo só para exibir */}
+          {formData.hasSubstitute === 'Não' && (
+            <label className="block">
+              Substituição:
+              <input
+                type="text"
+                className="w-full border p-2 mt-1"
+                value="Não"
+                readOnly
+              />
+            </label>
+          )}
+          
+          {/* Quantas aulas o substituto deu */}
+          {formData.hasSubstitute === 'Sim' && (
+            <label className="block">
+              Quantas aulas o substituto deu?
+              <input
+                type="number"
+                min={0}
+                className="w-full border p-2 mt-1"
+                value={formData.substitute_total_classes || ''}
+                onChange={(e) => handleFormChange('substitute_total_classes', parseInt(e.target.value, 10))}
+              />
+            </label>
+          )}
+
     
           {/* Botões */}
           <div className="flex justify-end gap-2 pt-4">
