@@ -7,7 +7,7 @@ const RegisterAbsence: React.FC = () => {
   const navigate = useNavigate();
 
   const handleSuccess = () => {
-    navigate('/');
+    navigate(0);
   };
 
   return (
