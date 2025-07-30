@@ -177,6 +177,10 @@ const handleTeacherChange = (teacherId: string) => {
       newErrors.reason = 'Razão é obrigatório';
     }
 
+    if (!formData.course) {
+      newErrors.course = 'Curso é obrigatório';
+    }
+
     if (!formData.classes) {
       newErrors.classes = 'A quantidade de aulas faltadas é obrigatória';
     }
@@ -435,6 +439,7 @@ useEffect(() => {
                     { value: 'Outros', label: 'Outros' },
                   ]}
                   icon={<BookOpen size={18} className="text-gray-400" />}
+                  required
                 />
       
                 {/* Contract Type */}
