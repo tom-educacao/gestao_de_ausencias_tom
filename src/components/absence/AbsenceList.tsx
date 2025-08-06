@@ -25,12 +25,11 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
   absences, 
   title = "Absence Records" 
 }) => {
-  const { absences: contextAbsences, deleteAbsence, loading, departments } = useAbsences();
+  const { absences: contextAbsences, deleteAbsence, loading, departments, teachers } = useAbsences();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [editingAbsence, setEditingAbsence] = useState<Absence | null>(null);
   const [formData, setFormData] = useState<Partial<Absence>>({});
-
 
   const sourceAbsences = absences ?? contextAbsences;
 
@@ -149,13 +148,15 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
     doc.text(`Gerado em ${format(new Date(), 'dd MMMM, yyyy')}`, 14, 30);
     
     // Create table
-    const tableColumn = ['Unidade', 'Data', 'Professor', 'Categoria', 'Curso', 'Departamento', 'Período', 'Razão', 'Duração', 'Substituto', 'Aulas dadas pelo substituto'];
+    const tableColumn = ['Unidade', 'Data', 'Professor', 'Categoria', 'Curso', 'Departamento', 'Período', 'Razão', 'Duração', 'Substituto', 'Aulas dadas pelo substituto', 'Regência'];
     const tableRows = sortedAbsences.map(absence => {
       const department = departments.find(d => d.id === absence.departmentId);
       const disciplinaId = department?.disciplinaId || '';
       const departamentoCompleto = disciplinaId
         ? `${absence.departmentName} - ${disciplinaId}`
         : absence.departmentName;
+      const teacher = teachers.find(t => t.id === absence.teacherId);
+      const regencia = teacher?.regencia ?? '-';
     
       return [
         absence.unit || '-',
@@ -169,6 +170,7 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
         `${absence.classes} aulas`,
         absence.substituteTeacherName || absence.substituteTeacherName2 || absence.substituteTeacherName3 || 'Nenhum',
         absence.substitute_total_classes || 'Nenhum',
+        regencia,
       ];
     });
     
@@ -193,6 +195,8 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
         const departamentoCompleto = disciplinaId
           ? `${absence.departmentName} - ${disciplinaId}`
           : absence.departmentName;
+        const teacher = teachers.find(t => t.id === absence.teacherId);
+        const regencia = teacher?.regencia ?? '-';
         
         const categoriaSubstituto = absence.substituteTeacherName
           ? 'Tutor'
@@ -214,6 +218,7 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
           Duração: `${absence.classes} aulas`,
           Substituto: absence.substituteTeacherName || absence.substituteTeacherName2 || absence.substituteTeacherName3 || 'Nenhum',
           Substituto_aulas: absence.substitute_total_classes || 'Nenhum',
+          Regência: regencia,
           Categoria_Substituto: categoriaSubstituto, // <-- Nova coluna adicionada aqui
           Notas: absence.notes || '',
         };
@@ -315,6 +320,14 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
         return '-'
         }
       }
+    },
+    
+    {
+      header: 'Regência',
+      accessor: (absence: Absence) => {
+        const teacher = teachers.find(t => t.id === absence.teacherId);
+        return teacher?.regencia ?? '-';
+      },
     },
   
     {
