@@ -184,11 +184,39 @@ const handleTeacherChange = (teacherId: string) => {
     if (!formData.classes) {
       newErrors.classes = 'A quantidade de aulas faltadas é obrigatória';
     }
+
+    const faltadas = Number(formData.classes);
+    const substituidas = Number(formData.substitute_total_classes);
+  
+    if (
+      formData.hasSubstitute === 'Sim' &&
+      !isNaN(faltadas) &&
+      !isNaN(substituidas) &&
+      substituidas > faltadas
+    ) {
+      newErrors.substitute_total_classes = 'As aulas substituídas não podem exceder as aulas faltadas.';
+    }
     
     if (formData.duration === 'Partial Day') {
       if (formData.startTime || formData.endTime) {
         newErrors.startTime = 'Não é necessário preencher os horários de início e fim para "Dia Parcial"';
         newErrors.endTime = 'Não é necessário preencher os horários de início e fim para "Dia Parcial"';
+      }
+    }
+
+    if (formData.date) {
+      const today = new Date();
+      const absenceDate = new Date(formData.date);
+  
+      const diffInMs = today.getTime() - absenceDate.getTime();
+      const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+  
+      if (diffInDays > 7) {
+        newErrors.date = 'A data da ausência não pode ser anterior a 7 dias do dia atual.';
+      }
+  
+      if (absenceDate > today) {
+        newErrors.date = 'A data da ausência não pode ser no futuro.';
       }
     }
     

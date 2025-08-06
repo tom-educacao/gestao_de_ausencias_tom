@@ -13,7 +13,7 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedAbsence, setSelectedAbsence] = useState<Absence | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<Date | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [selectedUnit, setSelectedUnit] = useState<string>('Todas');
   const allUnits = Array.from(new Set(absences.map(abs => abs.unit).filter(Boolean))).sort();
 
