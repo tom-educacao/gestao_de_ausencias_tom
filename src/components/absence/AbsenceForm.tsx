@@ -206,19 +206,20 @@ const handleTeacherChange = (teacherId: string) => {
 
     if (formData.date) {
       const today = new Date();
+      today.setHours(0, 0, 0, 0); // zera horas para evitar fuso/horário
+    
       const absenceDate = new Date(formData.date);
-  
-      const diffInMs = today.getTime() - absenceDate.getTime();
+      absenceDate.setHours(0, 0, 0, 0);
+    
+      const diffInMs = absenceDate.getTime() - today.getTime();
       const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
-  
+    
+      // Se for no futuro e passar de 7 dias → erro
       if (diffInDays > 7) {
-        newErrors.date = 'A data da ausência não pode ser anterior a 7 dias do dia atual.';
-      }
-  
-      if (absenceDate > today) {
-        newErrors.date = 'A data da ausência não pode ser no futuro.';
+        newErrors.date = 'A data da ausência não pode ser superior a 7 dias no futuro.';
       }
     }
+
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
