@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAbsences } from '../context/AbsenceContext';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/layout/Layout';
@@ -13,7 +13,7 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedAbsence, setSelectedAbsence] = useState<Absence | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [selectedMonth, setSelectedMonth] = useState<Date | null>(new Date());
   const [selectedUnit, setSelectedUnit] = useState<string>('Todas');
   const allUnits = Array.from(new Set(absences.map(abs => abs.unit).filter(Boolean))).sort();
 
@@ -60,26 +60,27 @@ const Dashboard: React.FC = () => {
 
   const highestDept = departments.find(d => d.id === highestDeptId);
 
-  // Filter and sort absences
-  const filteredAndSortedAbsences = [...absences]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .filter(absence => {
-      if (selectedUnit !== 'Todas' && absence.unit !== selectedUnit) {
-        return false;
-      }
-      if (selectedMonth) {
-        const date = parseISO(absence.date);
-        return (
-          date >= startOfMonth(selectedMonth) &&
-          date <= endOfMonth(selectedMonth)
-        );
-      }
-      return true;
-    });
-
+const filteredAndSortedAbsences = [...absences]
+  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  .filter(absence => {
+    if (selectedUnit !== 'Todas' && absence.unit !== selectedUnit) return false;
+    if (selectedMonth) {
+      const d = parseISO(absence.date);
+      return d >= startOfMonth(selectedMonth) && d <= endOfMonth(selectedMonth);
+    }
+    return true;
+  });
 
   // Get recent absences (last 5) from filtered list
   const recentAbsences = filteredAndSortedAbsences;
+
+const [page, setPage] = useState(1);
+const pageSize = 500;
+const totalItems = recentAbsences.length;
+const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+const paginatedAbsences = recentAbsences.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => { setPage(1); }, [selectedUnit, selectedMonth]);
 
   // Navigate between months
   const prevMonth = () => {
@@ -244,11 +245,46 @@ const Dashboard: React.FC = () => {
           </select>
         </div>
 
-        <AbsenceList 
-          title={`Faltas Recentes ${selectedUnit !== 'Todas' ? `- ${selectedUnit}` : ''}`}
-          absences={recentAbsences}
-          onView={handleViewAbsence}
-        />
+      {/* Controles de paginação acima da lista */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-sm text-gray-600">
+          Página {page} de {totalPages} — exibindo {(paginatedAbsences.length)} de {totalItems} registros
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+            disabled={page === 1}
+          >
+            Anterior
+          </button>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+            disabled={page === totalPages}
+          >
+            Próxima
+          </button>
+        </div>
+      </div>
+
+      <AbsenceList
+        title={`Faltas Recentes ${selectedUnit !== 'Todas' ? `- ${selectedUnit}` : ''}`}
+        absences={paginatedAbsences} // agora exibe só 500 por página
+        onView={handleViewAbsence}
+      />
+      </div>
+      {/* Controles de paginação abaixo também (opcional) */}
+      <div className="flex items-center justify-between mt-2">
+        <div className="text-sm text-gray-600">
+          Página {page} de {totalPages}
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setPage(1)} className="px-3 py-1 border rounded" disabled={page===1}>Primeira</button>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} className="px-3 py-1 border rounded" disabled={page===1}>Anterior</button>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="px-3 py-1 border rounded" disabled={page===totalPages}>Próxima</button>
+          <button onClick={() => setPage(totalPages)} className="px-3 py-1 border rounded" disabled={page===totalPages}>Última</button>
+        </div>
       </div>
     </Layout>
   );
