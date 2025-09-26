@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAbsences } from '../../context/AbsenceContext';
-import { Absence, AbsenceDuration, AbsenceReason } from '../../types';
+import { Absence, AbsenceDuration, AbsenceReason, RegistrationType, Leave } from '../../types';
+import { useLeaves } from '../../hooks/useLeaves';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import SubstituteSelect from './SubstituteSelect';
+import LeaveForm from './LeaveForm';
+import LeaveSelector from './LeaveSelector';
+import BulkAbsenceGenerator from './BulkAbsenceGenerator';
 import { Calendar, FileText, User, Building, Briefcase, BookOpen, Clock12, CheckCircle, Save } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -29,6 +33,10 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [roleType, setRoleType] = useState<'Professor' | 'Técnico pedagógico' | ''>('');
   const [formKey, setFormKey] = useState(0);
+  const [registrationType, setRegistrationType] = useState<RegistrationType>('single');
+  const [selectedLeaveId, setSelectedLeaveId] = useState<string | null>(null);
+  const [createdLeave, setCreatedLeave] = useState<Leave | null>(null);
+  const [showBulkGenerator, setShowBulkGenerator] = useState(false);
   
   // Modal states
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
@@ -61,6 +69,13 @@ const AbsenceForm: React.FC<AbsenceFormProps> = ({
   });
 
   const [isDepartmentChanged, setIsDepartmentChanged] = useState(false);
+
+  // Hook for leaves
+  const { leaves, loading: leavesLoading } = useLeaves({
+    teacherId: formData.teacherId,
+    date: formData.date,
+    status: 'active'
+  });
 
   const filteredTeachers = teachers.filter(teacher => {
     if (teacher.unit !== formData.unit) return false;
@@ -238,6 +253,7 @@ const handleTeacherChange = (teacherId: string) => {
     try {
       const absenceData = {
         ...formData,
+        leaveId: registrationType === 'link_to_leave' ? selectedLeaveId : undefined,
         duration: formData.duration === 'Full Day' ? 'Full Day' : 'Partial Day',
       };
       
@@ -315,10 +331,73 @@ useEffect(() => {
   }
 }, [teachers, departments, isEditing, formKey]);
 
+  // Handle leave creation success
+  const handleLeaveCreated = (leave: Leave) => {
+    setCreatedLeave(leave);
+    setShowBulkGenerator(true);
+  };
+
+  // Handle bulk generation success
+  const handleBulkGenerationSuccess = () => {
+    setShowBulkGenerator(false);
+    setCreatedLeave(null);
+    setRegistrationType('single');
+    setSuccessDialogOpen(true);
+  };
+
+  // Show bulk generator if we just created a leave
+  if (showBulkGenerator && createdLeave) {
+    return (
+      <BulkAbsenceGenerator
+        leave={createdLeave}
+        onSuccess={handleBulkGenerationSuccess}
+        onCancel={() => {
+          setShowBulkGenerator(false);
+          setCreatedLeave(null);
+          setRegistrationType('single');
+          if (onSuccess) onSuccess();
+        }}
+      />
+    );
+  }
+
+  // Show leave form if creating new leave
+  if (registrationType === 'create_leave' && formData.teacherId && formData.teacherName) {
+    return (
+      <LeaveForm
+        teacherId={formData.teacherId}
+        teacherName={formData.teacherName}
+        onSuccess={handleLeaveCreated}
+        onCancel={() => setRegistrationType('single')}
+      />
+    );
+  }
+
   return (
     <>
       <Card title={isEditing ? 'Edit Absence' : 'Register New Absence'}>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {!isEditing && (
+            <div className="space-y-4">
+              <Select
+                label="Tipo de Registro"
+                id="registrationType"
+                name="registrationType"
+                value={registrationType}
+                onChange={(value) => {
+                  setRegistrationType(value as RegistrationType);
+                  setSelectedLeaveId(null);
+                }}
+                options={[
+                  { value: 'single', label: 'Falta avulsa' },
+                  { value: 'link_to_leave', label: 'Vincular a afastamento' },
+                  { value: 'create_leave', label: 'Criar novo afastamento' },
+                ]}
+                required
+              />
+            </div>
+          )}
+
           <div className="space-y-4">
             <Select
               label="Tipo de Funcionário"
@@ -608,26 +687,40 @@ useEffect(() => {
                   required
                   icon={<Calendar size={18} className="text-gray-400" />}
                 />
+
+                {/* Show leave selector if linking to leave */}
+                {registrationType === 'link_to_leave' && formData.teacherId && formData.date && (
+                  <div className="col-span-2">
+                    <LeaveSelector
+                      leaves={leaves}
+                      selectedLeaveId={selectedLeaveId}
+                      onSelectLeave={setSelectedLeaveId}
+                      loading={leavesLoading}
+                    />
+                  </div>
+                )}
                 
                 {/* Reason for Absence */}
-                <Select
-                  label="Motivo da Ausência"
-                  id="reason"
-                  name="reason"
-                  value={formData.reason}
-                  onChange={(value) => setFormData(prev => ({ ...prev, reason: value as AbsenceReason }))}
-                  options={[
-                    { value: 'Sick Leave', label: 'Licença médica' },
-                    { value: 'Personal Leave', label: 'Licença Pessoal' },
-                    { value: 'Professional Development', label: 'Desenvolvimento Profissional' },
-                    { value: 'Conference', label: 'Conferência' },
-                    { value: 'Family Emergency', label: 'Emergência Familiar' },
-                    { value: 'Demissao', label: 'Demissão' },
-                    { value: 'Other', label: 'Outro' },
-                  ]}
-                  error={errors.reason}
-                  required
-                />
+                {registrationType !== 'link_to_leave' && (
+                  <Select
+                    label="Motivo da Ausência"
+                    id="reason"
+                    name="reason"
+                    value={formData.reason}
+                    onChange={(value) => setFormData(prev => ({ ...prev, reason: value as AbsenceReason }))}
+                    options={[
+                      { value: 'Sick Leave', label: 'Licença médica' },
+                      { value: 'Personal Leave', label: 'Licença Pessoal' },
+                      { value: 'Professional Development', label: 'Desenvolvimento Profissional' },
+                      { value: 'Conference', label: 'Conferência' },
+                      { value: 'Family Emergency', label: 'Emergência Familiar' },
+                      { value: 'Demissao', label: 'Demissão' },
+                      { value: 'Other', label: 'Outro' },
+                    ]}
+                    error={errors.reason}
+                    required
+                  />
+                )}
       
                   {roleType === 'Técnico pedagógico' && (
                     <Select
@@ -647,37 +740,41 @@ useEffect(() => {
                 
               </div>
       
-              <Input
-                label="Notas"
-                id="notes"
-                name="notes"
-                value={formData.notes || ''}
-                onChange={handleChange}
-                error={errors.notes}
-                required={false} // Torne este campo opcional se preferir
-                icon={<FileText size={18} className="text-gray-400" />}
-              />
-      
-              {/* Documento (Novo campo para anexar documento) */}
-              <div>
-                <label
-                  htmlFor="fileInput"
-                  className="bg-blue-400 text-white rounded-lg py-2 px-4 cursor-pointer hover:bg-blue-500 transition duration-200 inline-block"
-                >
-                  Clique para fazer upload do atestado
-                </label>
-                <input
-                  id="fileInput"
-                  type="file"
-                  onChange={handleFileChange}
-                  className="hidden"
+              {registrationType !== 'link_to_leave' && (
+                <Input
+                  label="Notas"
+                  id="notes"
+                  name="notes"
+                  value={formData.notes || ''}
+                  onChange={handleChange}
+                  error={errors.notes}
+                  required={false}
+                  icon={<FileText size={18} className="text-gray-400" />}
                 />
-                {file && (
-                  <div className="mt-2 text-left">
-                    <p className="text-green-600">Arquivo carregado com sucesso!</p>
-                  </div>
-                )}
-              </div>
+              )}
+      
+              {/* Documento (apenas para faltas avulsas) */}
+              {registrationType === 'single' && (
+                <div>
+                  <label
+                    htmlFor="fileInput"
+                    className="bg-blue-400 text-white rounded-lg py-2 px-4 cursor-pointer hover:bg-blue-500 transition duration-200 inline-block"
+                  >
+                    Clique para fazer upload do atestado
+                  </label>
+                  <input
+                    id="fileInput"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  {file && (
+                    <div className="mt-2 text-left">
+                      <p className="text-green-600">Arquivo carregado com sucesso!</p>
+                    </div>
+                  )}
+                </div>
+              )}
       
               
               <div className="flex justify-end space-x-3">
@@ -720,6 +817,7 @@ useEffect(() => {
                 <Button
                   type="submit"
                   isLoading={isSubmitting}
+                  disabled={registrationType === 'link_to_leave' && !selectedLeaveId}
                 >
                   {isEditing ? 'Atualizar Falta' : 'Registrar Falta'}
                 </Button>
