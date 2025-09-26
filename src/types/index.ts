@@ -53,11 +53,15 @@ export interface Absence {
   substituteTeacherId?: string;
   substituteTeacherName?: string;
   substituteTeacherName2?: string;
+  substituteTeacherName3?: string;
   substituteContent: string;
   duration: AbsenceDuration;
   startTime?: string;
   endTime?: string;
   classes?: string;
+  leaveId?: string;
+  hasSubstitute?: string;
+  substituteType?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -68,3 +72,19 @@ export interface User {
   email: string;
   role: 'admin' | 'coordinator' | 'teacher';
 }
+
+export interface Leave {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  documentUrl?: string;
+  status: 'active' | 'inactive' | 'completed';
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RegistrationType = 'single' | 'link_to_leave' | 'create_leave';

@@ -209,6 +209,7 @@ export const AbsenceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           substitute_teacher_name2: absence.substituteTeacherName2 || null,
           substitute_teacher_name3: absence.substituteTeacherName3 || null,
           substitute_total_classes: absence.substitute_total_classes || null,
+          leave_id: absence.leaveId || null,
           duration: duration,
           course: absence.course,
           start_time: duration === 'Partial Day' ? absence.startTime : null,
