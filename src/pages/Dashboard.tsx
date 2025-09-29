@@ -93,7 +93,6 @@ const paginatedAbsences = recentAbsences.slice((page - 1) * pageSize, page * pag
 
   const handleViewAbsence = (absence: Absence) => {
     setSelectedAbsence(absence);
-    console.log(absence)
   };
 
   interface AbsenceListProps {

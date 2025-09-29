@@ -51,7 +51,7 @@ const BulkAbsenceGenerator: React.FC<BulkAbsenceGeneratorProps> = ({
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [includeWeekends, setIncludeWeekends] = useState(false);
-  const [classesPerDay, setClassesPerDay] = useState('4');
+  const [classesPerDay, setClassesPerDay] = useState('');
 
   // Substituição
   const [hasSubstitute, setHasSubstitute] = useState<'Sim' | 'Não'>('Não');
@@ -78,7 +78,8 @@ const BulkAbsenceGenerator: React.FC<BulkAbsenceGeneratorProps> = ({
   const handleGenerate = async () => {
     if (!user || !teacher || !department) return;
 
-    const classesNum = parseInt(classesPerDay);
+    console.log(workingDays.length)
+    const classesNum = parseInt(classesPerDay) / workingDays.length;
     if (isNaN(classesNum) || classesNum <= 0) {
       alert('Informe um número válido de aulas por dia.');
       setIsGenerating(false);
@@ -200,12 +201,12 @@ const BulkAbsenceGenerator: React.FC<BulkAbsenceGeneratorProps> = ({
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Aulas por dia
+              Total de AULAS que o professor irá faltar
             </label>
             <input
               type="number"
               min="1"
-              max="10"
+              max="1000"
               value={classesPerDay}
               onChange={(e) => setClassesPerDay(e.target.value)}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
@@ -341,7 +342,7 @@ const BulkAbsenceGenerator: React.FC<BulkAbsenceGeneratorProps> = ({
                 Serão criados <strong>{workingDays.length} registros de falta</strong>
               </p>
               <p className="text-sm text-gray-600">
-                Total de aulas: <strong>{workingDays.length * parseInt(classesPerDay)} aulas</strong>
+                Total de aulas: <strong>{parseInt(classesPerDay) / workingDays.length} aulas</strong>
               </p>
             </div>
           </div>
