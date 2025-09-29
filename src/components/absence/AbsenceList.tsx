@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAbsences } from '../../context/AbsenceContext';
 import { Absence } from '../../types';
 import Table from '../ui/Table';
@@ -31,8 +31,61 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
   const [editingAbsence, setEditingAbsence] = useState<Absence | null>(null);
   const [formData, setFormData] = useState<Partial<Absence>>({});
 
+  // ---------------------------
+  // Seleção em massa
+  // ---------------------------
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [confirmBulk, setConfirmBulk] = useState(false);
+
   const sourceAbsences = absences ?? contextAbsences;
   const sortedAbsences = [...sourceAbsences].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const allSelected = sortedAbsences.length > 0 && selectedIds.size === sortedAbsences.length;
+  const someSelected = selectedIds.size > 0 && !allSelected;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds(prev => {
+      if (prev.size === sortedAbsences.length) return new Set(); // limpa
+      return new Set(sortedAbsences.map(a => a.id));
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkDelete = async () => {
+    if (!confirmBulk) {
+      setConfirmBulk(true);
+      setTimeout(() => setConfirmBulk(false), 3000);
+      return;
+    }
+    setIsBulkDeleting(true);
+    try {
+      // Deleção em paralelo, usando a função já existente no contexto
+      await Promise.all([...selectedIds].map(id => deleteAbsence(id)));
+      clearSelection();
+    } catch (err) {
+      console.error('Erro ao deletar em massa:', err);
+    } finally {
+      setIsBulkDeleting(false);
+      setConfirmBulk(false);
+    }
+  };
+
+  // Opcional: manter seleção coerente quando a lista muda (filtro, refetch)
+  useEffect(() => {
+    const currentIds = new Set(sortedAbsences.map(a => a.id));
+    setSelectedIds(prev => new Set([...prev].filter(id => currentIds.has(id))));
+  }, [sortedAbsences]);
 
   const openEditModal = (absence: Absence) => {
     setEditingAbsence(absence);
@@ -44,7 +97,7 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
     setFormData({});
   };
   
-  const handleFormChange = (field: keyof Absence, value: string) => {
+  const handleFormChange = (field: keyof Absence, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
   
@@ -97,6 +150,12 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
       } finally {
         setIsDeleting(null);
         setConfirmDelete(null);
+        // também remove da seleção, se marcado
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
       }
     } else {
       setConfirmDelete(id);
@@ -273,24 +332,6 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
       XLSX.utils.sheet_add_json(ws, rows, { origin: -1 });
     }
 
-    // (Opcional) aba 'Atestado' para TODOS — pode ser muito pesado.
-    // Sugestão: criar apenas a lista de metadados; evitar chamadas massivas ao storage.
-    // Se ainda quiser, limite concorrência e/ou gere só para os primeiros N:
-    /*
-    const atestadoSheet = XLSX.utils.json_to_sheet([]);
-    XLSX.utils.book_append_sheet(workbook, atestadoSheet, 'Atestado');
-    const MAX_ATESTADO = 1000; // por segurança
-    for (const part of chunk(all.slice(0, MAX_ATESTADO), 200)) {
-      const rows: any[] = [];
-      for (const absence of part) {
-        const absenceDate = format(parseISO(absence.date), 'yyyy-MM-dd');
-        const files = await fetchFilesFromSupabase(absence.teacherName, absenceDate);
-        files.forEach(f => rows.push({ Professor: absence.teacherName, Data: absenceDate, Atestado: f.data.publicUrl }));
-      }
-      if (rows.length) XLSX.utils.sheet_add_json(atestadoSheet, rows, { origin: -1 });
-    }
-    */
-
     XLSX.writeFile(workbook, 'faltas_professores_TODOS.xlsx');
   };
 
@@ -334,23 +375,70 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
 
     // gerar em blocos para reduzir memória
     const CHUNK_SIZE = 2000;
-    let startY = 40;
     const parts = chunk(all, CHUNK_SIZE);
     parts.forEach((part, idx) => {
       autoTable(doc, {
         head: idx === 0 ? head : undefined, // cabeça só na primeira
         body: part.map(toPdfRow),
-        startY: idx === 0 ? startY : undefined,
         styles: { fontSize: 10, cellPadding: 3 },
         headStyles: { fillColor: [66, 139, 202] }
       });
-      // nas próximas tabelas, o autoTable continua da última página
     });
 
     doc.save('faltas_professores_TODOS.pdf');
   };
 
+  // ---------------------------
+  // COLUNAS DA TABELA (com checkboxes)
+  // ---------------------------
   const columns = [
+    {
+      header: (
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            aria-label="Selecionar todos"
+            checked={allSelected}
+            ref={el => {
+              if (el) el.indeterminate = someSelected;
+            }}
+            onChange={toggleSelectAll}
+            className="cursor-pointer"
+          />
+          <span>Ações</span>
+        </div>
+      ),
+      accessor: (absence: Absence) => (
+        <div className="flex items-center gap-2 justify-end">
+          <input
+            type="checkbox"
+            aria-label={`Selecionar ${absence.teacherName} em ${absence.date}`}
+            checked={selectedIds.has(absence.id)}
+            onChange={() => toggleSelect(absence.id)}
+            className="cursor-pointer"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openEditModal(absence)}
+            icon={<Edit size={16} />}
+          >
+            Editar
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDelete(absence.id)}
+            icon={<Trash2 size={16} />}
+            isLoading={isDeleting === absence.id}
+            className={confirmDelete === absence.id ? 'bg-red-100' : ''}
+          >
+            {confirmDelete === absence.id ? 'Confirma' : 'Deletar'}
+          </Button>
+        </div>
+      ),
+      className: 'text-right',
+    },
     {
       header: 'Unidade',
       accessor: (absence: Absence) => absence.unit || '-',
@@ -402,7 +490,7 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
     {
       header: 'Aulas dadas pelo substituto',
       accessor: (absence: Absence) => {
-        if (absence.substitute_total_classes > 0){
+        if ((absence.substitute_total_classes ?? 0) > 0){
           return `${absence.substitute_total_classes} aulas`;
         }  else {
         return '-'
@@ -414,35 +502,8 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
       header: 'Regência',
       accessor: (absence: Absence) => {
         const teacher = teachers.find(t => t.id === absence.teacherId);
-        return teacher?.regencia ?? '-';
+        return teacher?.regencia ?? 'NÃO REGÊNCIA';
       },
-    },
-  
-    {
-      header: 'Ações',
-      accessor: (absence: Absence) => (
-        <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openEditModal(absence)}
-            icon={<Edit size={16} />}
-          >
-            Editar
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleDelete(absence.id)}
-            icon={<Trash2 size={16} />}
-            isLoading={isDeleting === absence.id}
-            className={confirmDelete === absence.id ? 'bg-red-100' : ''}
-          >
-            {confirmDelete === absence.id ? 'Confirma' : 'Deletar'}
-          </Button>
-        </div>
-      ),
-      className: 'text-right',
     },
   ];
 
@@ -470,6 +531,24 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
               </Button>
               <Button variant="primary" size="sm" onClick={exportAllToExcel} icon={<Download size={16} />}>
                 Excel (todos)
+              </Button>
+
+              {/* Deletar selecionados */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkDelete}
+                icon={<Trash2 size={16} />}
+                disabled={selectedIds.size === 0 || isBulkDeleting}
+                className={`${
+                  confirmBulk ? 'bg-red-100' : ''
+                } ${selectedIds.size === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                {isBulkDeleting
+                  ? 'Deletando...'
+                  : confirmBulk
+                    ? `Confirma deletar ${selectedIds.size} selecionado(s)`
+                    : `Deletar selecionados (${selectedIds.size})`}
               </Button>
             </div>
           </div>
