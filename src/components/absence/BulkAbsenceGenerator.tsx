@@ -77,8 +77,7 @@ const BulkAbsenceGenerator: React.FC<BulkAbsenceGeneratorProps> = ({
 
   const handleGenerate = async () => {
     if (!user || !teacher || !department) return;
-
-    console.log(workingDays.length)
+    
     const classesNum = parseInt(classesPerDay) / workingDays.length;
     if (isNaN(classesNum) || classesNum <= 0) {
       alert('Informe um número válido de aulas por dia.');
@@ -87,7 +86,7 @@ const BulkAbsenceGenerator: React.FC<BulkAbsenceGeneratorProps> = ({
     }
 
     if (hasSubstitute === 'Sim') {
-      const subNum = parseInt(substituteTotalClasses);
+      const subNum = parseInt(substituteTotalClasses) / workingDays.length;
       if (isNaN(subNum) || subNum < 0) {
         alert('Informe um número válido de aulas substituídas.');
         setIsGenerating(false);
@@ -122,7 +121,7 @@ const BulkAbsenceGenerator: React.FC<BulkAbsenceGeneratorProps> = ({
         const reason = mapLeaveReasonToAbsenceReason(leave.reason); // usar o mapper
 
         const subTotal = hasSubstitute === 'Sim'
-          ? parseInt(substituteTotalClasses)
+          ? parseInt(substituteTotalClasses) / workingDays.length
           : null;
 
         // Derivar campos de “quem substituiu”
@@ -342,7 +341,7 @@ const BulkAbsenceGenerator: React.FC<BulkAbsenceGeneratorProps> = ({
                 Serão criados <strong>{workingDays.length} registros de falta</strong>
               </p>
               <p className="text-sm text-gray-600">
-                Total de aulas: <strong>{parseInt(classesPerDay) / workingDays.length} aulas</strong>
+                Total de aulas: <strong>{(parseInt(classesPerDay) / workingDays.length).toFixed(2)} aulas</strong>
               </p>
             </div>
           </div>
