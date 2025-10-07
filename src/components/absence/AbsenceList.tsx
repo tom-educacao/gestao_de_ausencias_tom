@@ -30,6 +30,10 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [editingAbsence, setEditingAbsence] = useState<Absence | null>(null);
   const [formData, setFormData] = useState<Partial<Absence>>({});
+const [file, setFile] = useState<File | null>(null);
+const [fileUrl, setFileUrl] = useState<string | null>(null);
+const [uploading, setUploading] = useState(false);
+
 
   // ---------------------------
   // Seleção em massa
@@ -59,6 +63,43 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
       return new Set(sortedAbsences.map(a => a.id));
     });
   };
+
+const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const selectedFile = e.target.files ? e.target.files[0] : null;
+  setFile(selectedFile);
+};
+
+const handleUpload = async () => {
+  if (!file || !formData.teacherName || !formData.date) return;
+
+  try {
+    setUploading(true);
+    const filePath = `${formData.teacherName}/${formData.date}/${Date.now()}_${file.name}`;
+
+    const { error } = await supabase.storage
+      .from('teachers') // bucket
+      .upload(filePath, file);
+
+    if (error) {
+      console.error('Erro ao fazer upload do arquivo:', error.message);
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('teachers')
+      .getPublicUrl(filePath);
+
+    if (publicUrlData?.publicUrl) {
+      setFileUrl(publicUrlData.publicUrl);
+      console.log('Arquivo enviado com sucesso:', publicUrlData.publicUrl);
+    }
+  } catch (error) {
+    console.error('Erro ao tentar fazer o upload', error);
+  } finally {
+    setUploading(false);
+  }
+};
+
 
   const clearSelection = () => setSelectedIds(new Set());
 
@@ -744,6 +785,40 @@ const AbsenceList: React.FC<AbsenceListProps> = ({
               />
             </label>
           )}
+
+{/* Upload de Atestado */}
+<div className="border-t pt-4 mt-4">
+  <label className="block font-medium mb-1">Anexar Atestado:</label>
+  <input
+    type="file"
+    accept="image/*,application/pdf"
+    onChange={handleFileChange}
+    className="block w-full border p-2 mb-2"
+  />
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={handleUpload}
+    disabled={!file || uploading}
+  >
+    {uploading ? 'Enviando...' : 'Enviar Atestado'}
+  </Button>
+
+  {fileUrl && (
+    <p className="text-sm text-green-600 mt-2">
+      ✅ Atestado enviado com sucesso!{' '}
+      <a
+        href={fileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline text-blue-600"
+      >
+        Ver arquivo
+      </a>
+    </p>
+  )}
+</div>
+
 
     
           {/* Botões */}
