@@ -1,17 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAbsences } from '../context/AbsenceContext';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { format, parseISO } from 'date-fns';
-import { ArrowLeft, Edit, Trash2, Calendar, Clock, FileText, User, BookOpen, MessageSquare, Building, Briefcase, Clock12 } from 'lucide-react';
+import { ArrowLeft, CreditCard as Edit, Trash2, Calendar, Clock, FileText, User, BookOpen, MessageSquare, Building, Briefcase, Clock12, Upload } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const AbsenceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { absences, deleteAbsence } = useAbsences();
   const navigate = useNavigate();
-  
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+
   const absence = absences.find(a => a.id === id);
   
   if (!absence) {
@@ -40,6 +44,41 @@ const AbsenceDetail: React.FC = () => {
   
   const handleEdit = () => {
     navigate(`/edit/${absence.id}`);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files ? e.target.files[0] : null;
+    setFile(selectedFile);
+    setUploadSuccess(false);
+  };
+
+  const handleUpload = async () => {
+    if (!file || !absence) return;
+
+    try {
+      setUploading(true);
+      setUploadSuccess(false);
+
+      const filePath = `${absence.teacherName}/${absence.date}/${Date.now()}_${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('teachers')
+        .upload(filePath, file);
+
+      if (error) {
+        console.error('Erro ao fazer o upload do arquivo:', error.message);
+        alert('Erro ao enviar o arquivo. Tente novamente.');
+        return;
+      }
+
+      setUploadSuccess(true);
+      setFile(null);
+      console.log('Arquivo enviado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao tentar fazer o upload', error);
+      alert('Erro ao enviar o arquivo. Tente novamente.');
+    } finally {
+      setUploading(false);
+    }
   };
   
   return (
@@ -191,7 +230,7 @@ const AbsenceDetail: React.FC = () => {
           </Card>
         </div>
         
-        <div>
+        <div className="space-y-6">
           <Card>
             <h3 className="text-lg font-medium mb-4">Informações do Registro</h3>
             <div className="space-y-4">
@@ -201,20 +240,22 @@ const AbsenceDetail: React.FC = () => {
                   {format(parseISO(absence.createdAt), 'MMM d, yyyy')}
                 </p>
               </div>
-              
+
               <div>
                 <p className="text-sm font-medium text-gray-500">Última atualização</p>
                 <p className="text-base text-gray-900">
                   {format(parseISO(absence.updatedAt), 'MMM d, yyyy')}
                 </p>
               </div>
-              
+
               <div>
                 <p className="text-sm font-medium text-gray-500">ID do registro</p>
                 <p className="text-base text-gray-900">{absence.id}</p>
               </div>
             </div>
           </Card>
+
+
         </div>
       </div>
     </Layout>

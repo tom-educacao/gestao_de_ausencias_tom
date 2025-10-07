@@ -1,10 +1,11 @@
 // components/modals/EditAbsenceModal.tsx
 import React, { useState, useEffect } from 'react';
 import { Absence } from '../../types';
-import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import SubstituteSelect from './SubstituteSelect';
+import { supabase } from '../../lib/supabase';
+import { X } from 'lucide-react';
 
 interface EditAbsenceModalProps {
   absence: Absence | null;
@@ -14,6 +15,10 @@ interface EditAbsenceModalProps {
 
 const EditAbsenceModal: React.FC<EditAbsenceModalProps> = ({ absence, onClose, onSave }) => {
   const [formData, setFormData] = useState<Absence | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
 
   useEffect(() => {
     setFormData(absence);
@@ -26,14 +31,63 @@ const EditAbsenceModal: React.FC<EditAbsenceModalProps> = ({ absence, onClose, o
     setFormData(prev => prev ? { ...prev, [name]: value } : null);
   };
 
-  const handleSubmit = () => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files ? e.target.files[0] : null;
+    setFile(selectedFile);
+    if (selectedFile) {
+      setFilePreview(URL.createObjectURL(selectedFile));
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file || !formData) return;
+
+    try {
+      setUploading(true);
+
+      const filePath = `${formData.teacherName}/${formData.date}/${Date.now()}_${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('teachers')
+        .upload(filePath, file);
+
+      if (error) {
+        console.error('Erro ao fazer o upload do arquivo:', error.message);
+        return;
+      }
+
+      const fileUrl = `${supabase.storage.from('my_bucket').getPublicUrl(filePath).publicURL}`;
+      setFileUrl(fileUrl);
+
+      console.log('Arquivo enviado com sucesso! URL:', fileUrl);
+    } catch (error) {
+      console.error('Erro ao tentar fazer o upload', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (file) {
+      await handleUpload();
+    }
     if (formData) onSave(formData);
     onClose();
   };
 
   return (
-    <Modal title="Editar Falta" onClose={onClose}>
-      <div className="space-y-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">Editar Falta</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
         <Input
           label="Professor"
           name="teacherName"
@@ -133,14 +187,37 @@ const EditAbsenceModal: React.FC<EditAbsenceModalProps> = ({ absence, onClose, o
             onChange={handleChange}
           />
         )}
-    
-        <div className="flex justify-end space-x-2">
+
+        <div>
+          <label
+            htmlFor="fileInputEdit"
+            className="bg-blue-400 text-white rounded-lg py-2 px-4 cursor-pointer hover:bg-blue-500 transition duration-200 inline-block"
+          >
+            {uploading ? 'Enviando...' : 'Clique para fazer upload do atestado'}
+          </label>
+          <input
+            id="fileInputEdit"
+            type="file"
+            onChange={handleFileChange}
+            className="hidden"
+            disabled={uploading}
+          />
+          {file && (
+            <div className="mt-2 text-left">
+              <p className="text-green-600">Arquivo carregado com sucesso!</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end space-x-2 pt-4">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSubmit}>Salvar</Button>
+          <Button onClick={handleSubmit} disabled={uploading}>
+            {uploading ? 'Enviando...' : 'Salvar'}
+          </Button>
+        </div>
         </div>
       </div>
-    </Modal>
-
+    </div>
   );
 };
 

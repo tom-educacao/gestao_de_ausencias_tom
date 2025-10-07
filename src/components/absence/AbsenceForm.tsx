@@ -211,6 +211,13 @@ const handleTeacherChange = (teacherId: string) => {
     ) {
       newErrors.substitute_total_classes = 'As aulas substituídas não podem exceder as aulas faltadas.';
     }
+
+    if (
+      formData.hasSubstitute === 'Sim' &&
+      substitute_total_classes === 0
+    ) {
+      newErrors.substitute_total_classes = 'Preencha a quantidade de aulas do substituto.';
+    }
     
     if (formData.duration === 'Partial Day') {
       if (formData.startTime || formData.endTime) {
@@ -753,20 +760,21 @@ useEffect(() => {
                 />
               )}
       
-              {/* Documento (apenas para faltas avulsas) */}
-              {registrationType === 'single' && (
+              {/* Documento */}
+              {(registrationType === 'single' || isEditing) && (
                 <div>
                   <label
                     htmlFor="fileInput"
                     className="bg-blue-400 text-white rounded-lg py-2 px-4 cursor-pointer hover:bg-blue-500 transition duration-200 inline-block"
                   >
-                    Clique para fazer upload do atestado
+                    {uploading ? 'Enviando...' : 'Clique para fazer upload do atestado'}
                   </label>
                   <input
                     id="fileInput"
                     type="file"
                     onChange={handleFileChange}
                     className="hidden"
+                    disabled={uploading}
                   />
                   {file && (
                     <div className="mt-2 text-left">
