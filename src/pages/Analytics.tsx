@@ -604,7 +604,7 @@ const Analytics: React.FC = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-6">
         {/* Monthly Trend */}
         <Card>
           <h3 className="text-lg font-medium mb-4">Tendência Mensal de Ausências</h3>
