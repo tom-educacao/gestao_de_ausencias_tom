@@ -128,19 +128,43 @@ const handleUpload = async () => {
     setSelectedIds(prev => new Set([...prev].filter(id => currentIds.has(id))));
   }, [sortedAbsences]);
 
-  const openEditModal = (absence: Absence) => {
-    setEditingAbsence(absence);
-    setFormData(absence); // Preenche o formulário com os dados atuais
-  };
+const openEditModal = (absence: Absence) => {
+  setEditingAbsence(absence);
+  setFormData({
+    ...absence,
+    // garante que o ID venha preenchido para não tentar salvar "nome" depois
+    substituteTeacherId: absence.substituteTeacherId ?? '',
+  });
+};
+
   
   const closeModal = () => {
     setEditingAbsence(null);
     setFormData({});
   };
   
-  const handleFormChange = (field: keyof Absence, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+const handleFormChange = (field: keyof Absence, value: any) => {
+  setFormData(prev => {
+    const next = { ...prev, [field]: value };
+
+    if (field === 'hasSubstitute' && value === 'Não') {
+      next.substituteType = '';
+      next.substituteTeacherId = '';
+      next.substituteTeacherName = '';
+      next.substituteTeacherName2 = '';
+      next.substituteTeacherName3 = '';
+      next.substitute_total_classes = null;
+    }
+
+    if (field === 'substituteType' && value !== 'Tutor Substituto') {
+      next.substituteTeacherId = '';
+      next.substituteTeacherName = '';
+    }
+
+    return next;
+  });
+};
+
   
   const saveChanges = async () => {
     if (editingAbsence) {
@@ -157,9 +181,11 @@ const handleUpload = async () => {
         substitute_teacher_name2: formData.substituteTeacherName2 || '',
         substitute_teacher_name3: formData.substituteTeacherName3 || '',
         substitute_total_classes: formData.substitute_total_classes === '' ? null : formData.substitute_total_classes,
-        substitute_teacher_id: formData.substituteType === 'Tutor Substituto' 
-          ? formData.substituteTeacherName || null 
-          : null,
+substitute_teacher_id:
+  formData.substituteType === 'Tutor Substituto'
+    ? formData.substituteTeacherId ?? null
+    : null,
+
       };
   
       try {
@@ -746,16 +772,17 @@ const handleUpload = async () => {
             <div className="block">
               <label className="block mb-1">Tutor Substituto:</label>
               <SubstituteSelect
-                value={formData.substituteTeacherId || ''}
-                onChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    substituteTeacherId: value,
-                    substituteTeacherName: value,
-                  }))
-                }
-                unit={formData.unit}
-              />
+  value={formData.substituteTeacherId || ''}
+  onChange={(option) =>
+    setFormData((prev) => ({
+      ...prev,
+      substituteTeacherId: option?.id ?? '',   // ID da tabela substitutes
+      substituteTeacherName: option?.name ?? '', // nome visível
+    }))
+  }
+  unit={formData.unit}
+/>
+
             </div>
           )}
           
