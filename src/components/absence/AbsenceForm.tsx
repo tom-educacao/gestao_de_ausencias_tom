@@ -214,7 +214,7 @@ const handleTeacherChange = (teacherId: string) => {
 
     if (
       formData.hasSubstitute === 'Sim' &&
-      substitute_total_classes === 0
+      substitute_total_classes < 1 
     ) {
       newErrors.substitute_total_classes = 'Preencha a quantidade de aulas do substituto.';
     }
@@ -674,7 +674,7 @@ useEffect(() => {
                     id="substitute_total_classes"
                     name="substitute_total_classes"
                     type="number"
-                    min="0"
+                    min="1"
                     step="1"
                     value={formData.substitute_total_classes || ''}
                     onChange={handleChange}
