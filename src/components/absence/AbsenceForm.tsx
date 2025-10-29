@@ -188,7 +188,7 @@ const handleTeacherChange = (teacherId: string) => {
       newErrors.date = 'Data é obrigatório';
     }
     
-    if (!formData.reason) {
+    if (registrationType !== 'link_to_leave' && !formData.reason) {
       newErrors.reason = 'Razão é obrigatório';
     }
 
@@ -247,40 +247,78 @@ const handleTeacherChange = (teacherId: string) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
+// Handle form submission
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!validateForm()) return;
+
+  setIsSubmitting(true);
+
+  try {
+    // 🧭 Mapeamento de motivos PT → EN
+    const PT_TO_EN: Record<string, string> = {
+      'Licença médica': 'Sick Leave',
+      'Licença maternidade': 'Maternity Leave',
+      'Licença paternidade': 'Paternity Leave',
+      'Licença sem vencimentos': 'Unpaid Leave',
+      'Afastamento para capacitação': 'Professional Development',
+      'Outros': 'Other',
+    };
+
+    // 🧹 Função utilitária para converter strings vazias em null
+    const emptyToNull = (v: any) => (v === '' ? null : v);
+
+    // 🔗 Se estiver linkando a um afastamento, herda o motivo dele
+    const linkedLeaveReason =
+      registrationType === 'link_to_leave'
+        ? leaves.find(l => l.id === selectedLeaveId)?.reason ?? null
+        : null;
+
+    // 🔍 Normaliza o motivo (traduz PT → EN e garante consistência)
+    const normalizedReason =
+      registrationType === 'link_to_leave'
+        ? (linkedLeaveReason ? (PT_TO_EN[linkedLeaveReason] ?? linkedLeaveReason) : null)
+        : (formData.reason ? (PT_TO_EN[formData.reason] ?? formData.reason) : null);
+
+    // 🧩 Monta o objeto final
+    const absenceData = {
+      ...formData,
+
+      disciplinaId: emptyToNull(formData.disciplinaId),
+      substitute_total_classes: emptyToNull(formData.substitute_total_classes),
+      notes: emptyToNull(formData.notes),
+      substituteTeacherId: emptyToNull(formData.substituteTeacherId),
+      substituteTeacherName: emptyToNull(formData.substituteTeacherName),
+      substituteTeacherName2: emptyToNull(formData.substituteTeacherName2),
+      substituteTeacherName3: emptyToNull(formData.substituteTeacherName3),
+      substituteType: emptyToNull(formData.substituteType),
+      substituteContent: emptyToNull(formData.substituteContent),
+
+      reason: normalizedReason, // ← sempre válido para o banco
+      leaveId: registrationType === 'link_to_leave' ? selectedLeaveId : undefined,
+      duration: formData.duration === 'Full Day' ? 'Full Day' : 'Partial Day',
+    };
+
+    // 🧾 Log de depuração — veja no console o que está indo pro banco
+    console.log('📤 absenceData enviado:', absenceData);
+
+    // 💾 Atualiza ou cria nova ausência
+    if (isEditing && initialData.id) {
+      await updateAbsence(initialData.id, absenceData);
+      if (onSuccess) onSuccess();
+    } else {
+      await addAbsence(absenceData as Omit<Absence, 'id' | 'createdAt' | 'updatedAt'>);
+      handleUpload();
+      setSuccessDialogOpen(true);
     }
-    
-    setIsSubmitting(true);
-    
-    try {
-      const absenceData = {
-        ...formData,
-        leaveId: registrationType === 'link_to_leave' ? selectedLeaveId : undefined,
-        duration: formData.duration === 'Full Day' ? 'Full Day' : 'Partial Day',
-      };
-      
-      if (isEditing && initialData.id) {
-        await updateAbsence(initialData.id, absenceData);
-        if (onSuccess) {
-          onSuccess();
-        }
-      } else {
-        await addAbsence(absenceData as Omit<Absence, 'id' | 'createdAt' | 'updatedAt'>);
-        handleUpload();
-        // Mostrar modal de sucesso apenas para novos registros
-        setSuccessDialogOpen(true);
-      }
-    } catch (error) {
-      console.error('Error submitting absence:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  } catch (error) {
+    console.error('Error submitting absence:', error);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   // Handle saving teacher data to localStorage
   const handleSaveTeacherData = () => {
