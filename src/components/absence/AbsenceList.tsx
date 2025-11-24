@@ -4,7 +4,7 @@ import { Absence } from '../../types';
 import Table from '../ui/Table';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
-import { Edit, Trash2, Eye, Download } from 'lucide-react';
+import { CreditCard as Edit, Trash2, Eye, Download } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -772,16 +772,17 @@ substitute_teacher_id:
             <div className="block">
               <label className="block mb-1">Tutor Substituto:</label>
               <SubstituteSelect
-  value={formData.substituteTeacherId || ''}
-  onChange={(option) =>
-    setFormData((prev) => ({
-      ...prev,
-      substituteTeacherId: option?.id ?? '',   // ID da tabela substitutes
-      substituteTeacherName: option?.name ?? '', // nome visível
-    }))
-  }
-  unit={formData.unit}
-/>
+                value={formData.substituteTeacherId || ''}
+                onChange={(value) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    substituteTeacherId: value,
+                    substituteTeacherName: value
+                  }));
+                }}
+                unit={formData.unit}
+                error={undefined}
+              />
 
             </div>
           )}
